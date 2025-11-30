@@ -1,9 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const getGameAnalysis = async (score: number, distance: number): Promise<string> => {
+  // Lazy initialization to prevent crash on module load if API key is missing
+  const apiKey = process.env.API_KEY;
+
+  if (!apiKey) {
+    console.error("Gemini API Key is missing");
+    return "API 키가 설정되지 않아 AI 분석을 사용할 수 없습니다.";
+  }
+
   try {
+    const ai = new GoogleGenAI({ apiKey: apiKey });
+    
     const prompt = `
       당신은 냉소적이지만 유머러스한 F1 레이싱 팀 매니저입니다.
       플레이어가 방금 게임 오버되었습니다.
