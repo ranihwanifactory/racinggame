@@ -2,6 +2,12 @@ import { db } from "../firebase";
 import { ref, push, query, orderByChild, limitToLast, get, set } from "firebase/database";
 import { ScoreEntry } from "../types";
 
+export interface RankingResult {
+  success: boolean;
+  data: ScoreEntry[];
+  error?: string;
+}
+
 export const saveScore = async (uid: string, displayName: string, score: number) => {
   try {
     const scoresRef = ref(db, 'scores');
@@ -21,27 +27,53 @@ export const saveScore = async (uid: string, displayName: string, score: number)
   }
 };
 
-export const getTopScores = async (): Promise<ScoreEntry[]> => {
+export const getTopScores = async (): Promise<RankingResult> => {
+  const scoresRef = ref(db, 'scores');
+  
   try {
-    const scoresRef = ref(db, 'scores');
-    const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(20));
-    const snapshot = await get(topScoresQuery);
+    // 1st Attempt: Try server-side sorting (Efficient)
+    try {
+      const topScoresQuery = query(scoresRef, orderByChild('score'), limitToLast(20));
+      const snapshot = await get(topScoresQuery);
 
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      // Firebase returns object with keys, convert to array
-      const scoresArray: ScoreEntry[] = Object.values(data);
-      // Sort descending by score
-      return scoresArray.sort((a, b) => b.score - a.score);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const scoresArray: ScoreEntry[] = Object.values(data);
+        const sorted = scoresArray.sort((a, b) => b.score - a.score);
+        return { success: true, data: sorted };
+      }
+      return { success: true, data: [] };
+
+    } catch (queryError: any) {
+      // 2nd Attempt: Fallback to client-side sorting if index is missing
+      // This ensures the app works even if the user hasn't configured Firebase Indexes yet.
+      if (queryError.message && (queryError.message.includes('Index not defined') || queryError.message.includes('indexOn'))) {
+         console.warn("Firebase Index missing. Falling back to client-side sorting.");
+         
+         const snapshot = await get(scoresRef); // Fetch all data (warning: slow for large datasets)
+         if (snapshot.exists()) {
+             const data = snapshot.val();
+             const scoresArray: ScoreEntry[] = Object.values(data);
+             // Sort and take top 20
+             const sorted = scoresArray.sort((a, b) => b.score - a.score).slice(0, 20);
+             return { success: true, data: sorted };
+         }
+         return { success: true, data: [] };
+      }
+      // Re-throw if it's not an index error
+      throw queryError;
     }
-    return [];
+
   } catch (error: any) {
-    if (error.code === 'PERMISSION_DENIED') {
-        console.warn("Fetch scores failed: Permission Denied. Check Firebase Console Rules.");
-        // Return empty array to UI doesn't crash, UI will show empty state
-        return [];
-    }
     console.error("Error fetching scores:", error);
-    return [];
+    let errorMessage = error.message;
+    
+    if (error.code === 'PERMISSION_DENIED' || (error.message && error.message.includes('permission_denied'))) {
+        errorMessage = 'PERMISSION_DENIED';
+    } else if (error.message && (error.message.includes('Index not defined') || error.message.includes('indexOn'))) {
+        errorMessage = 'INDEX_NOT_DEFINED';
+    }
+
+    return { success: false, data: [], error: errorMessage };
   }
 };
