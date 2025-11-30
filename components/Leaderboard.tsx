@@ -20,7 +20,11 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ scores, currentUserId, onClos
 
         <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {scores.length === 0 ? (
-            <div className="text-center text-gray-500 py-10">기록 로딩중...</div>
+            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 py-10 gap-2">
+              <span className="text-2xl opacity-50">🏁</span>
+              <p>등록된 기록이 없습니다.</p>
+              <p className="text-xs text-gray-600">Firebase Database 규칙을 확인해주세요.</p>
+            </div>
           ) : (
             scores.map((entry, index) => {
               const isCurrentUser = entry.uid === currentUserId;

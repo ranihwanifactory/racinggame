@@ -12,8 +12,12 @@ export const saveScore = async (uid: string, displayName: string, score: number)
       score,
       timestamp: Date.now()
     });
-  } catch (error) {
-    console.error("Error saving score:", error);
+  } catch (error: any) {
+    if (error.code === 'PERMISSION_DENIED') {
+       console.warn("Score save failed: Permission Denied. Check Firebase Console Rules.");
+    } else {
+       console.error("Error saving score:", error);
+    }
   }
 };
 
@@ -31,7 +35,12 @@ export const getTopScores = async (): Promise<ScoreEntry[]> => {
       return scoresArray.sort((a, b) => b.score - a.score);
     }
     return [];
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 'PERMISSION_DENIED') {
+        console.warn("Fetch scores failed: Permission Denied. Check Firebase Console Rules.");
+        // Return empty array to UI doesn't crash, UI will show empty state
+        return [];
+    }
     console.error("Error fetching scores:", error);
     return [];
   }
