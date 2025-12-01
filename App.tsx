@@ -29,11 +29,7 @@ const App: React.FC = () => {
   // Local High Score
   const [localBestScore, setLocalBestScore] = useState(0);
 
-  // PWA Install State
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [showInstallButton, setShowInstallButton] = useState(false);
-
-  // Monitor Auth State & PWA Install Event
+  // Monitor Auth State
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -48,19 +44,7 @@ const App: React.FC = () => {
       setLocalBestScore(parseInt(savedBest, 10));
     }
 
-    // PWA Install Prompt Handler
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallButton(true);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
+    return () => unsubscribe();
   }, []);
 
   const handleScoreUpdate = useCallback((newScore: number, distance: number, newSpeed: number) => {
@@ -120,38 +104,6 @@ const App: React.FC = () => {
     }
   };
 
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setShowInstallButton(false);
-    }
-    setDeferredPrompt(null);
-  };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Neon Racer AI',
-          text: `Neon Racer에서 ${score}점을 기록했습니다! 제 기록에 도전해보세요.`,
-          url: window.location.href,
-        });
-      } catch (error) {
-        console.log('Error sharing:', error);
-      }
-    } else {
-      // Fallback for desktop/unsupported
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        alert('게임 주소가 클립보드에 복사되었습니다!');
-      } catch (err) {
-        console.error("Clipboard copy failed", err);
-      }
-    }
-  };
-
   return (
     <div className="w-full h-screen bg-gray-900 relative">
       <GameCanvas 
@@ -160,6 +112,10 @@ const App: React.FC = () => {
         onScoreUpdate={handleScoreUpdate}
       />
       
+      {/* Show local best on idle screen via custom prop or modification to UIOverlay. 
+          For now, UIOverlay doesn't have localBest prop, but we can pass it if we wanted.
+          Let's stick to the current UIOverlay contract but pass it implicitly if needed later.
+      */}
       <UIOverlay 
         status={status}
         score={score}
@@ -167,14 +123,11 @@ const App: React.FC = () => {
         aiAnalysis={aiAnalysis}
         isAiLoading={isAiLoading}
         user={user}
-        showInstallButton={showInstallButton}
         onStart={handleStart}
         onRestart={handleRestart}
         onLoginClick={() => setShowAuthModal(true)}
         onLogoutClick={() => signOut(auth)}
         onShowLeaderboard={handleShowLeaderboard}
-        onInstallClick={handleInstallClick}
-        onShareClick={handleShare}
       />
       
       {/* Optional: Display Local Best on Idle Screen Overlay hack */}

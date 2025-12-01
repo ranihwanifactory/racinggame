@@ -30,7 +30,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
     lastTime: 0,
   });
 
-  const requestRef = useRef<number>(0);
+  const requestRef = useRef<number>();
 
   // Input Handling
   const moveLane = useCallback((direction: -1 | 1) => {

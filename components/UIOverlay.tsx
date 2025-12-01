@@ -8,14 +8,11 @@ interface UIOverlayProps {
   aiAnalysis: string;
   isAiLoading: boolean;
   user: any; // Firebase user type
-  showInstallButton?: boolean;
   onStart: () => void;
   onRestart: () => void;
   onLoginClick: () => void;
   onLogoutClick: () => void;
   onShowLeaderboard: () => void;
-  onInstallClick?: () => void;
-  onShareClick?: () => void;
 }
 
 const UIOverlay: React.FC<UIOverlayProps> = ({ 
@@ -25,14 +22,11 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   aiAnalysis, 
   isAiLoading,
   user,
-  showInstallButton,
   onStart, 
   onRestart,
   onLoginClick,
   onLogoutClick,
-  onShowLeaderboard,
-  onInstallClick,
-  onShareClick
+  onShowLeaderboard
 }) => {
   // Format speed to look like km/h
   const displaySpeed = Math.floor(speed * 20); 
@@ -75,24 +69,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             >
               <span className="block skew-x-[12deg]">RANKING</span>
             </button>
-
-             <div className="flex gap-2 w-full">
-              {showInstallButton && (
-                <button 
-                  onClick={onInstallClick}
-                  className="flex-1 py-2 bg-gray-800/60 border border-gray-700 text-neon-green hover:bg-neon-green/20 hover:border-neon-green rounded skew-x-[-12deg] transition-all text-xs font-bold"
-                >
-                  <span className="block skew-x-[12deg]">📲 INSTALL APP</span>
-                </button>
-              )}
-              
-              <button 
-                onClick={onShareClick}
-                className="flex-1 py-2 bg-gray-800/60 border border-gray-700 text-neon-pink hover:bg-neon-pink/20 hover:border-neon-pink rounded skew-x-[-12deg] transition-all text-xs font-bold"
-              >
-                <span className="block skew-x-[12deg]">🔗 SHARE</span>
-              </button>
-            </div>
 
             {/* Login Status / Button */}
             <div className="mt-4 flex flex-col items-center">
@@ -168,13 +144,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               className="w-full px-10 py-3 bg-transparent border border-gray-600 text-gray-300 font-bold hover:bg-gray-800 transition-all skew-x-[-12deg]"
             >
                <span className="block skew-x-[12deg]">RANKING</span>
-            </button>
-            
-             <button 
-              onClick={onShareClick}
-              className="w-full py-2 text-neon-pink hover:text-white text-xs font-bold tracking-widest mt-2"
-            >
-              🔗 SHARE RESULT
             </button>
           </div>
         </div>

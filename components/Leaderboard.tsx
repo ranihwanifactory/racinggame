@@ -10,44 +10,32 @@ interface LeaderboardProps {
 }
 
 const Leaderboard: React.FC<LeaderboardProps> = ({ scores, isLoading, error, currentUserId, onClose }) => {
-  // Check if we are in "Local Mode" (error is present but we have data, or explicitly passed from service)
-  // The service now returns { success: true, data: localData, error: 'ERROR_TYPE', isLocal: true }
-  // We can infer local mode if error is not null.
-  
-  const isOfflineMode = !!error;
-
   return (
     <div className="absolute inset-0 bg-black/95 backdrop-blur-xl flex items-center justify-center z-50 p-6 animate-fade-in">
       <div className="max-w-md w-full h-[85vh] flex flex-col bg-gray-900/50 border border-gray-800 rounded-xl overflow-hidden relative shadow-[0_0_50px_rgba(0,0,0,0.8)]">
-        <div className="p-6 border-b border-gray-800 bg-gray-900 sticky top-0 z-10 flex justify-between items-start">
-          <div>
-            <h2 className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 tracking-tighter">
-              HALL OF FAME
-            </h2>
-            <p className="text-gray-400 text-xs font-mono mt-1">
-              TOP RACERS GLOBAL RANKING
-              {isOfflineMode && <span className="text-red-500 ml-2 animate-pulse">[OFFLINE MODE]</span>}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
+        <div className="p-6 border-b border-gray-800 bg-gray-900 sticky top-0 z-10">
+          <h2 className="text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-500 tracking-tighter">
+            HALL OF FAME
+          </h2>
+          <p className="text-gray-400 text-xs font-mono mt-1">TOP RACERS GLOBAL RANKING</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 scrollbar-hide relative">
-          
-          {/* Error / Guide Message Banner */}
-          {error && (
-            <div className="mb-4 text-left bg-gray-950/80 p-3 rounded border border-gray-800 w-full text-xs text-gray-400 font-mono">
-              <div className="flex items-center gap-2 mb-1 text-yellow-500">
-                <span>⚠️</span> 
-                <span className="font-bold">연결 상태 확인 필요</span>
-              </div>
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+          {isLoading ? (
+             <div className="flex flex-col items-center justify-center h-64 gap-4 text-neon-blue">
+               <div className="w-8 h-8 border-4 border-neon-blue border-t-transparent rounded-full animate-spin"></div>
+               <span className="text-sm font-mono animate-pulse">CONNECTING TO MAINFRAME...</span>
+             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-4 gap-4">
+              <span className="text-4xl">⚠️</span>
+              <h3 className="text-red-400 font-bold">데이터 불러오기 실패</h3>
               
               {error === 'PERMISSION_DENIED' ? (
-                <>
-                  <p className="mb-1">Firebase 권한 설정이 필요합니다.</p>
-                  <pre className="bg-black p-2 rounded text-green-500 overflow-x-auto my-1">
+                <div className="text-left bg-gray-950 p-4 rounded border border-red-900/50 w-full text-xs text-gray-400 font-mono">
+                  <p className="mb-2 text-white">Firebase 권한 오류가 발생했습니다.</p>
+                  <p className="mb-2">Firebase Console 규칙 탭에서 읽기/쓰기 권한을 허용해주세요.</p>
+                  <pre className="bg-black p-2 rounded text-green-500 overflow-x-auto">
 {`{
   "rules": {
     ".read": true,
@@ -55,29 +43,23 @@ const Leaderboard: React.FC<LeaderboardProps> = ({ scores, isLoading, error, cur
   }
 }`}
                   </pre>
-                </>
+                </div>
               ) : error === 'INDEX_NOT_DEFINED' ? (
-                <>
-                  <p className="mb-1">Firebase 인덱스 설정이 필요합니다.</p>
-                  <pre className="bg-black p-2 rounded text-yellow-500 overflow-x-auto my-1">
-{`"best_scores": {
+                <div className="text-left bg-gray-950 p-4 rounded border border-yellow-900/50 w-full text-xs text-gray-400 font-mono">
+                  <p className="mb-2 text-white">인덱스 설정이 권장됩니다.</p>
+                  <p className="mb-2">성능 향상을 위해 규칙 탭에 아래 내용을 추가해주세요:</p>
+                  <pre className="bg-black p-2 rounded text-yellow-500 overflow-x-auto">
+{`"scores": {
   ".indexOn": ["score"]
 }`}
                   </pre>
-                </>
+                </div>
               ) : (
-                <p>서버에 연결할 수 없어 로컬 기록을 표시합니다.</p>
+                <p className="text-gray-500 text-sm">{error}</p>
               )}
             </div>
-          )}
-
-          {isLoading ? (
-             <div className="flex flex-col items-center justify-center h-64 gap-4 text-neon-blue">
-               <div className="w-8 h-8 border-4 border-neon-blue border-t-transparent rounded-full animate-spin"></div>
-               <span className="text-sm font-mono animate-pulse">CONNECTING TO MAINFRAME...</span>
-             </div>
           ) : scores.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-center text-gray-500 gap-2">
+            <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 py-10 gap-2">
               <span className="text-2xl opacity-50">🏁</span>
               <p>등록된 기록이 없습니다.</p>
               <p className="text-xs text-gray-600">첫 번째 챔피언이 되어보세요!</p>
