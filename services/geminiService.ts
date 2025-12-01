@@ -5,8 +5,8 @@ export const getGameAnalysis = async (score: number, distance: number): Promise<
   const apiKey = process.env.API_KEY;
 
   if (!apiKey) {
-    console.warn("Gemini API Key is missing. AI analysis will be disabled.");
-    return "API 키가 설정되지 않았습니다. (배포 환경의 환경 변수를 확인해주세요)";
+    // API Key가 없는 경우 조용히 기본 오프라인 메시지를 반환합니다.
+    return "AI 시스템 오프라인. 운전 실력은 스스로 판단해.";
   }
 
   try {
