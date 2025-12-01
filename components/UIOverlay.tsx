@@ -1,5 +1,6 @@
 import React from 'react';
 import { GameStatus } from '../types';
+import { audioManager } from '../services/audioService';
 
 interface UIOverlayProps {
   status: GameStatus;
@@ -8,11 +9,14 @@ interface UIOverlayProps {
   aiAnalysis: string;
   isAiLoading: boolean;
   user: any; // Firebase user type
+  showInstallButton?: boolean;
   onStart: () => void;
   onRestart: () => void;
   onLoginClick: () => void;
   onLogoutClick: () => void;
   onShowLeaderboard: () => void;
+  onInstallClick?: () => void;
+  onShareClick?: () => void;
 }
 
 const UIOverlay: React.FC<UIOverlayProps> = ({ 
@@ -22,14 +26,29 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   aiAnalysis, 
   isAiLoading,
   user,
+  showInstallButton,
   onStart, 
   onRestart,
   onLoginClick,
   onLogoutClick,
-  onShowLeaderboard
+  onShowLeaderboard,
+  onInstallClick,
+  onShareClick
 }) => {
   // Format speed to look like km/h
   const displaySpeed = Math.floor(speed * 20); 
+
+  const wrapClick = (handler?: () => void) => {
+    return () => {
+      audioManager.playClick();
+      if (handler) handler();
+    };
+  };
+
+  const handleStartGame = () => {
+    audioManager.playStart();
+    onStart();
+  }
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
@@ -56,7 +75,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           
           <div className="flex flex-col items-center gap-4 w-full max-w-xs px-6">
             <button 
-              onClick={onStart}
+              onClick={handleStartGame}
               className="w-full group relative px-8 py-3 bg-transparent overflow-hidden rounded-none skew-x-[-12deg] border border-neon-blue text-neon-blue hover:bg-neon-blue hover:text-black transition-all duration-300"
             >
               <span className="absolute inset-0 w-full h-full bg-neon-blue/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
@@ -64,11 +83,29 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </button>
             
             <button 
-              onClick={onShowLeaderboard}
+              onClick={wrapClick(onShowLeaderboard)}
               className="w-full py-3 bg-gray-800/80 border border-gray-600 hover:border-yellow-400 hover:text-yellow-400 text-gray-300 rounded skew-x-[-12deg] transition-all font-bold tracking-widest"
             >
               <span className="block skew-x-[12deg]">RANKING</span>
             </button>
+
+             <div className="flex gap-2 w-full">
+              {showInstallButton && (
+                <button 
+                  onClick={wrapClick(onInstallClick)}
+                  className="flex-1 py-2 bg-gray-800/60 border border-gray-700 text-neon-green hover:bg-neon-green/20 hover:border-neon-green rounded skew-x-[-12deg] transition-all text-xs font-bold"
+                >
+                  <span className="block skew-x-[12deg]">📲 INSTALL APP</span>
+                </button>
+              )}
+              
+              <button 
+                onClick={wrapClick(onShareClick)}
+                className="flex-1 py-2 bg-gray-800/60 border border-gray-700 text-neon-pink hover:bg-neon-pink/20 hover:border-neon-pink rounded skew-x-[-12deg] transition-all text-xs font-bold"
+              >
+                <span className="block skew-x-[12deg]">🔗 SHARE</span>
+              </button>
+            </div>
 
             {/* Login Status / Button */}
             <div className="mt-4 flex flex-col items-center">
@@ -78,13 +115,13 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                   <span className="text-sm text-white font-medium max-w-[150px] truncate">
                     {user.displayName || user.email?.split('@')[0]}
                   </span>
-                  <button onClick={onLogoutClick} className="text-xs text-red-400 hover:text-red-300 underline ml-2">
+                  <button onClick={wrapClick(onLogoutClick)} className="text-xs text-red-400 hover:text-red-300 underline ml-2">
                     LOGOUT
                   </button>
                 </div>
               ) : (
                 <button 
-                  onClick={onLoginClick}
+                  onClick={wrapClick(onLoginClick)}
                   className="text-sm text-neon-pink hover:text-white underline decoration-dashed underline-offset-4"
                 >
                   LOGIN TO SAVE SCORE
@@ -134,16 +171,23 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
 
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <button 
-              onClick={onRestart}
+              onClick={wrapClick(onRestart)}
               className="w-full px-10 py-3 bg-white text-black font-bold text-lg hover:bg-neon-green hover:scale-105 transition-all shadow-[0_0_20px_rgba(255,255,255,0.4)] skew-x-[-12deg]"
             >
               <span className="block skew-x-[12deg]">RETRY</span>
             </button>
             <button 
-              onClick={onShowLeaderboard}
+              onClick={wrapClick(onShowLeaderboard)}
               className="w-full px-10 py-3 bg-transparent border border-gray-600 text-gray-300 font-bold hover:bg-gray-800 transition-all skew-x-[-12deg]"
             >
                <span className="block skew-x-[12deg]">RANKING</span>
+            </button>
+            
+             <button 
+              onClick={wrapClick(onShareClick)}
+              className="w-full py-2 text-neon-pink hover:text-white text-xs font-bold tracking-widest mt-2"
+            >
+              🔗 SHARE RESULT
             </button>
           </div>
         </div>

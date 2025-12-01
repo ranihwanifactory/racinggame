@@ -4,6 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Neon Racer AI</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#00f3ff" />
+    <meta name="description" content="AI가 분석해주는 초고속 네온 레이싱 게임. 당신의 반사신경을 테스트하세요!" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3097/3097180.png" />
+
+    <!-- Open Graph (OG) Tags for Social Sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Neon Racer AI - Cyberpunk Racing" />
+    <meta property="og:description" content="최신 AI 기술이 접목된 레이싱 게임. 장애물을 피하고 최고 기록에 도전하세요!" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1594787318286-3d835c1d207f?q=80&w=1200&h=630&fit=crop" />
+    <meta property="og:url" content="https://neon-racer-ai.web.app" />
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -74,6 +88,15 @@
     "firebase/": "https://aistudiocdn.com/firebase@^12.6.0/"
   }
 }
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then((reg) => console.log('Service Worker Registered'))
+        .catch((err) => console.log('Service Worker Failed', err));
+    });
+  }
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>

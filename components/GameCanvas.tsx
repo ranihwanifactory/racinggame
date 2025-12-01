@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { GameStatus, Car, Obstacle, Particle } from '../types';
 import { CANVAS_WIDTH, LANE_COUNT, LANE_WIDTH, CAR_WIDTH, CAR_HEIGHT, INITIAL_SPEED, MAX_SPEED, SPEED_INCREMENT, COLORS } from '../constants';
+import { audioManager } from '../services/audioService';
 
 interface GameCanvasProps {
   status: GameStatus;
@@ -30,7 +31,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
     lastTime: 0,
   });
 
-  const requestRef = useRef<number>();
+  const requestRef = useRef<number>(0);
 
   // Input Handling
   const moveLane = useCallback((direction: -1 | 1) => {
@@ -38,7 +39,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
     
     const currentLane = gameStateRef.current.car.lane;
     const newLane = Math.max(0, Math.min(2, currentLane + direction));
-    gameStateRef.current.car.lane = newLane;
+    
+    if (newLane !== currentLane) {
+      gameStateRef.current.car.lane = newLane;
+      audioManager.playMove(); // Trigger Sound
+    }
   }, [status]);
 
   useEffect(() => {
@@ -54,6 +59,10 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
   // Touch controls logic
   const handleTouchStart = (e: React.TouchEvent) => {
     if (status !== GameStatus.PLAYING) return;
+    
+    // Resume audio context on first touch if needed
+    audioManager.resume();
+
     const touchX = e.touches[0].clientX;
     const halfWidth = window.innerWidth / 2;
     if (touchX < halfWidth) moveLane(-1);
@@ -72,6 +81,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
     if (state.car.speed < MAX_SPEED) {
       state.car.speed += SPEED_INCREMENT;
     }
+
+    // Update Engine Sound
+    audioManager.updateEngine(state.car.speed);
 
     // Update Distance & Score
     state.distance += state.car.speed * 0.1;
@@ -129,14 +141,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
 
     let collision = false;
     state.obstacles.forEach(obs => {
-      // Scale coordinates if canvas is scaled, but here logic is virtual
-      // However, we render relative to screen height.
-      // Let's standardize the Y coordinate logic.
-      // Car is fixed at bottom area. Obstacles move down.
-      
-      // Need to map virtual Y to screen Y for collision
-      // In this simple model, obstacle.pos.y IS the screen Y.
-      
       const obsRect = {
         l: obs.pos.x + padding,
         r: obs.pos.x + obs.width - padding,
@@ -158,6 +162,7 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
     onScoreUpdate(state.score, state.distance, state.car.speed);
 
     if (collision) {
+      audioManager.playCrash(); // Trigger Crash Sound
       onGameOver(state.score, state.distance);
     } else {
       requestRef.current = requestAnimationFrame(update);
@@ -271,8 +276,6 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
         ctx.stroke();
     }
     
-    // Continue loop if just rendering, logic loop handles the recursion separately if needed,
-    // but here we sync render with update for simplicity in React strict mode setup
     if (status === GameStatus.PLAYING) {
         requestAnimationFrame(render);
     }
@@ -284,12 +287,11 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
       if (containerRef.current && canvasRef.current) {
         canvasRef.current.width = containerRef.current.clientWidth;
         canvasRef.current.height = containerRef.current.clientHeight;
-        // Trigger a re-render
         requestAnimationFrame(render);
       }
     };
     window.addEventListener('resize', handleResize);
-    handleResize(); // Initial size
+    handleResize(); 
 
     return () => window.removeEventListener('resize', handleResize);
   }, [render]);
@@ -297,22 +299,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({ status, onGameOver, onScoreUpda
   // Main Loop Trigger
   useEffect(() => {
     if (status === GameStatus.PLAYING) {
+      audioManager.startEngine(); // Start Engine Sound
       gameStateRef.current.lastTime = performance.now();
       requestRef.current = requestAnimationFrame(update);
       requestAnimationFrame(render);
-    } else if (status === GameStatus.IDLE) {
-       // Reset state
-       gameStateRef.current.car.lane = 1;
-       gameStateRef.current.car.pos.x = CANVAS_WIDTH / 2 - CAR_WIDTH / 2;
-       gameStateRef.current.car.speed = INITIAL_SPEED;
-       gameStateRef.current.score = 0;
-       gameStateRef.current.distance = 0;
-       gameStateRef.current.obstacles = [];
-       requestAnimationFrame(render); // Render once to show start state
+    } else {
+       audioManager.stopEngine(); // Stop Engine Sound
+       if (status === GameStatus.IDLE) {
+         // Reset state
+         gameStateRef.current.car.lane = 1;
+         gameStateRef.current.car.pos.x = CANVAS_WIDTH / 2 - CAR_WIDTH / 2;
+         gameStateRef.current.car.speed = INITIAL_SPEED;
+         gameStateRef.current.score = 0;
+         gameStateRef.current.distance = 0;
+         gameStateRef.current.obstacles = [];
+         requestAnimationFrame(render);
+       }
     }
 
     return () => {
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      audioManager.stopEngine(); // Cleanup
     };
   }, [status, update, render]);
 
